@@ -49,4 +49,17 @@ public class HttpListenerServer
         await response.OutputStream.WriteAsync(buffer,0, buffer.Length);
         response.Close();
     }
+
+    private async Task WriteJsonResponse(HttpListenerResponse response, object data)
+    {
+        response.ContentType = "application/json";
+        string json = JsonSerializer.Serialize(data, new JsonSerializerOptions{
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = true
+        });
+
+        await WriteResponse(response, json);
+    }
+
+    
 }
