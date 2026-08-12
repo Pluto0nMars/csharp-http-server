@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
 using System.Net;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -128,4 +130,43 @@ public class HttpListenerServer
         }
 
     }
+
+     //Handlers for post requests and adding new users
+    private async Task HandleCreateUser(HttpListenerContext context)
+    {   
+        //Read post body
+        try
+        {
+            string jsonString = await ReadRequestBody(context.Request);
+
+            if (string.IsNullOrEmpty(jsonString))
+            {
+               context.Response.StatusCode = 400;
+               await WriteJsonResponse(context.Response, new {error = "Request body is required!"});
+               return; 
+            }
+
+            //parse JSON
+            var userData = JsonSerializer.Deserialize<Dictionary<string,object>>(jsonString);
+
+            //simulate creating user
+            var newUser = new
+            {
+              Id = new Random().Next(1000, 9999),
+              Name = userData.GetValueOrDefault("name", "Unknown").ToString(),
+              Email = userData.GetValueOrDefault("email","unknown@example.com").ToString(),
+              CreatedAt = DateTime.UtcNow
+            };
+
+            context.Response.StatusCode = 201;
+            await WriteJsonResponse(context.Response, newUser);
+            
+        }
+        catch(JsonException)
+        {
+           context.Response.StatusCode = 400;
+           await WriteJsonResponse(context.Response, new {error = "Invalid JSON in request body"});
+        }
+    }
+
 }
