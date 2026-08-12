@@ -169,4 +169,43 @@ public class HttpListenerServer
         }
     }
 
+    private async Task HandlePostData(HttpListenerContext context)
+    {
+        try
+        {
+            string requestBody = await ReadRequestBody(context.Request);
+
+            var responseData = new
+            {
+                messag = "Data recieved successfully",
+                recievedAt = DateTime.UtcNow,
+                contentType = context.Request.ContentType,
+                contentLength = context.Request.ContentLength64,
+                data = requestBody
+
+            };  
+
+            await WriteJsonResponse(context.Response, responseData);
+
+        }
+        catch(Exception ex)
+        {
+            context.Response.StatusCode = 400;
+            await WriteJsonResponse(context.Response, new {error = ex.Message});
+        }
+    }
+
+    private void SetUpDefaultRoutes()
+    {
+        //GET routes
+        _routes["GET /"] = HandleHomeRoute;
+        _routes["GET /api/users"] = HandleGetUsers;
+        _routes["Get /api/users{id}"] = HandleGetUserById;
+
+        //POST routes
+        _routes["POST /api/users"] = HandleCreateUser;
+        _routes["Post /api/users"] = HandlePostData;
+
+     }
+
 }
