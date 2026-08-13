@@ -7,6 +7,7 @@ using System.IO;
 using System.Net;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -177,7 +178,7 @@ public class HttpListenerServer
 
             var responseData = new
             {
-                messag = "Data recieved successfully",
+                message = "Data recieved successfully",
                 recievedAt = DateTime.UtcNow,
                 contentType = context.Request.ContentType,
                 contentLength = context.Request.ContentLength64,
@@ -200,12 +201,39 @@ public class HttpListenerServer
         //GET routes
         _routes["GET /"] = HandleHomeRoute;
         _routes["GET /api/users"] = HandleGetUsers;
-        _routes["Get /api/users{id}"] = HandleGetUserById;
+        _routes["GET /api/users/{id}"] = HandleGetUserById;
 
         //POST routes
         _routes["POST /api/users"] = HandleCreateUser;
-        _routes["Post /api/users"] = HandlePostData;
+        _routes["POST /api/data"] = HandlePostData;
 
-     }
+    }
+
+
+    public async Task StartAsync()
+    {
+        _listener.Start();
+        Console.WriteLine("HTTP Server started on:");
+        foreach (string prefix in _listener.Prefixes)
+        {
+            Console.WriteLine($" {prefix}");
+
+        }
+
+        //handle requests concurrently (as a server should)
+        var tasks = new List<Task>();
+        for (int i = 0; i < 10; i++)
+        {
+            tasks.Add(HandleIncomingConnections());
+        }
+
+        await Task.WhenAll(tasks);
+
+    }
+
+    public async Task HandleIncomingConnections()
+    {
+        
+    }
 
 }
