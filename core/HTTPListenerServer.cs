@@ -233,6 +233,27 @@ public class HttpListenerServer
 
     public async Task HandleIncomingConnections()
     {
+       while (!_cancellationTokenSource.Token.IsCancellationRequested)
+        {
+            try
+            {
+                var context = await _listener.GetContextAsync();
+                _ = Task.Run(() => ProcessRequest(context));
+            }
+            catch(ObjectDisposedException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting context: {ex.Message}");
+            }
+        } 
+    }
+
+    //To-Do: need to handle preflight request for CORS and add CORD headers
+    private async Task ProcessRequest(HttpListenerContext context)
+    {
         
     }
 
