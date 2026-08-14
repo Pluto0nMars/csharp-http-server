@@ -251,8 +251,79 @@ public class HttpListenerServer
         } 
     }
 
-    //To-Do: need to handle preflight request for CORS and add CORD headers
+    private async Task HandleNotFound(HttpListenerContext context)
+    {
+        context.Response.StatusCode = 404;
+        await WriteJsonResponse(context.Response, new {error = "Endpoint not found"});
+    }
+
     private async Task ProcessRequest(HttpListenerContext context)
+    {
+        try
+        {
+            var request = context.Request;
+            var response = context.Response;
+
+            AddCorsHeaders(response);
+
+            if (request.HttpMethod == "OPTIONS")
+            {
+                response.StatusCode = 200;
+                response.Close();
+                return;
+            }
+
+            Console.WriteLine($"{request.HttpMethod} {request.Url.LocalPath}");
+
+            string routeKey = $"{request.HttpMethod} {request.Url.LocalPath}";
+
+            if (_routes.TryGetValue(routeKey, out var handler))
+            {
+                await handler(context);
+            }
+            else if (IsParameterizedRoute(request, out var paramHandler))
+            {
+               await paramHandler(context);
+            }
+            else
+            {
+                await HandleNotFound(context);
+            }
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"Error processing request: {ex.Message}");
+            try
+            {
+                context.Response.StatusCode = 500;
+                await WriteJsonResponse(context.Response, new {error = "Internal server error"});
+            }
+            catch
+            {
+                // Server should just ignore if respoinse is already close
+                //could print somthing
+                Console.WriteLine("response is already closed");
+            }
+        }
+    }
+    
+
+    private bool IsParameterizedRoute(HttpListenerRequest request, out Func<HttpListenerContext, Task> handler)
+    {
+        handler = null;
+        var path = request.Url.LocalPath;
+        var method = request.HttpMethod;
+
+        if(method == "GET" && path.StartsWith("/api/users/") && path.Length > "/api/users".Length)
+        {   
+            handler = HandleGetUserById;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void AddCorsHeaders(HttpListenerResponse response)
     {
         
     }
