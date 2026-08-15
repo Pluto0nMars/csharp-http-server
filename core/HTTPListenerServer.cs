@@ -325,7 +325,16 @@ public class HttpListenerServer
 
     private void AddCorsHeaders(HttpListenerResponse response)
     {
-        
+        response.Headers.Add("Access-Control-Allow-Origin", "*");
+        response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT");
+        response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization"); 
     }
+
+    public void Stop()
+    {
+        _cancellationTokenSource.Cancel();
+        _listener?.Stop();
+        _listener?.Close();
+   }
 
 }
