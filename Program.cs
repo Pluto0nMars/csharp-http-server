@@ -1,25 +1,29 @@
 ﻿using System.Net;
 using csharp_http_server_1.Core;
 
-static async Task Main(string[] args)
+
+class Program
 {
-    string[] prefixes = {"http://localhost:8080/"};
-    var server =  new HttpListenerServer([]);
-
-    Console.WriteLine("Starting HTTP Server...");
-    Console.WriteLine("Press 'q' to quit");
-
-    var serverTask = server.StartAsync();
-
-    while (true)
+    static async Task Main(string[] args)
     {
-        var key = Console.ReadKey(true);
-        if(key.KeyChar == 'q' || key.KeyChar == 'Q')
+        string[] prefixes = {"http://localhost:8080/"};
+        var server =  new HttpListenerServer(prefixes);
+
+        Console.WriteLine("Starting HTTP Server...");
+        Console.WriteLine("Press 'q' to quit");
+
+        var serverTask = server.StartAsync();
+
+        while (true)
         {
-            break;
+            var key = Console.ReadKey(true);
+            if(key.KeyChar == 'q' || key.KeyChar == 'Q')
+            {
+                break;
+            }
         }
 
-        Console.WriteLine("Stopping server");
+        Console.WriteLine("Stopping server....");
         server.Stop();
 
         try
@@ -28,9 +32,14 @@ static async Task Main(string[] args)
         }
         catch(OperationCanceledException ex)
         {
-            Console.WriteLine("Server stopped with an exception"+ex.Message);
+            Console.WriteLine($"Server cancelled cleanly: {ex.Message}");
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"Server stopped with an error: {ex.Message}");
         }
 
-        Console.WriteLine("Server stopped");
+        Console.WriteLine("Server stopped successfully!");  
+        
     }
 }

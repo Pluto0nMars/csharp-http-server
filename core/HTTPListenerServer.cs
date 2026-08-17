@@ -32,6 +32,8 @@ public class HttpListenerServer
         {
             _listener.Prefixes.Add(prefix);
         }
+
+        SetUpDefaultRoutes();
     }
 
 
@@ -308,7 +310,7 @@ public class HttpListenerServer
     }
     
 
-    private bool IsParameterizedRoute(HttpListenerRequest request, out Func<HttpListenerContext, Task> handler)
+    private bool IsParameterizedRoute(HttpListenerRequest request, out Func<HttpListenerContext, Task>? handler)
     {
         handler = null;
         var path = request.Url.LocalPath;
