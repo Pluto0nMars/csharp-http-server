@@ -21,7 +21,7 @@ Here's the the data flow of the server:
 
 Typing directly into the browser address bar sends an `HTTP GET` request. Navigate to any of the URLs listed. Each `url` is a different method for the server interaction. The server needs to running in the background of course, but if someone prefers, they could interact with the server and place all of their request through the browser. In order for the browser to give  the user the ability to perform methods directly on the home route, browsers require explicit instructions via JavaScript `fetch()`. Responses are given in `JSON` format for consistency with the terminal output.
 
-Alternatively you could past each request directly into the address bar, but I think that the home route offers a more convenient experience if you prefer the browser. I trade off of using the browser as opposed to the terminal would be the fact that post requests are slight more limited as you cannot directly decide the content of the `POST` request where as in the terminal this is not an issue. I hope to address this in the future so that both options have same level of user autonomy. 
+Alternatively you could past each request directly into the address bar, for example : `http://localhost:8080/api/users`, but I think that the home route offers a more convenient experience if you prefer the browser. I trade off of using the browser as opposed to the terminal would be the fact that post requests are slight more limited as you cannot directly decide the content of the `POST` request where as in the terminal this is not an issue. I hope to address this in the future so that both options have same level of user autonomy. 
 
 
 
