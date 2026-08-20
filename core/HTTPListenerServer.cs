@@ -19,7 +19,8 @@ public class HttpListenerServer
     private readonly CancellationTokenSource _cancellationTokenSource;
     private readonly Dictionary<string, Func<HttpListenerContext, Task>> _routes;
 
-
+    private static int _totalRequests = 0;
+    
     public HttpListenerServer(string [] prefixes)
     {   
         _listener = new HttpListener();
@@ -72,30 +73,69 @@ public class HttpListenerServer
     //Handlers for get requests
     private async Task HandleHomeRoute(HttpListenerContext context)
     {
-        
-            var html = @"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>HTTP Server</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 40px; }
-                .endpoint { background: #f5f5f5; padding: 10px; margin: 10px 0; border-left: 4px solid #007acc; }
-            </style>
-        </head>
-        <body>
-            <h1>HTTP Server Running</h1>
-            <h2>Available Endpoints in this server:</h2>
-            <div class='endpoint'><strong>GET /</strong> - This page</div>
-            <div class='endpoint'><strong>GET /api/users</strong> - Get all users</div>
-            <div class='endpoint'><strong>GET /api/users/{id}</strong> - Get user by ID</div>
-            <div class='endpoint'><strong>POST /api/users</strong> - Create new user</div>
-            <div class='endpoint'><strong>POST /api/data</strong> - Post JSON data</div>
-        </body>
-        </html>";
+        var html = @"
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>HTTP Server</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #121212; color: #fff; }
+            .endpoint { background: #1e1e1e; padding: 15px; margin: 10px 0; border-left: 4px solid #007acc; border-radius: 4px; }
+            a { color: #4ec9b0; text-decoration: none; font-weight: bold; }
+            a:hover { text-decoration: underline; }
+            button { background: #007acc; color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 4px; }
+            button:hover { background: #005999; }
+            pre { background: #000; padding: 10px; border-radius: 4px; color: #0f0; max-height: 150px; overflow-y: auto; }
+        </style>
+    </head>
+    <body>
+        <h1>HTTP Server Running</h1>
+        <h2>Available Endpoints:</h2>
+
+        <div class='endpoint'>
+            <strong>GET /</strong> - <a href='/'>Refresh Home Page</a>
+        </div>
+
+        <div class='endpoint'>
+            <strong>GET /api/users</strong> - <a href='/api/users' target='_blank'>Click to View All Users</a>
+        </div>
+
+        <div class='endpoint'>
+            <strong>GET /api/users/1</strong> - <a href='/api/users/1' target='_blank'>Click to View User #1</a>
+        </div>
+
+        <div class='endpoint'>
+            <strong>POST /api/users</strong> - 
+            <button onclick=""sendPost('/api/users', { name: 'Interactive User', email: 'click@example.com' })"">
+                Test POST User
+            </button>
+        </div>
+
+        <div class='endpoint'>
+            <strong>POST /api/data</strong> - 
+            <button onclick=""sendPost('/api/data', { click: 'success', status: 'live' })"">
+                Test POST Data
+            </button>
+        </div>
+
+        <h3>Interactive Response Output:</h3>
+        <pre id='output'>Click a POST button above to see the response here...</pre>
+
+        <script>
+            async function sendPost(url, payload) {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+            }
+        </script>
+    </body>
+    </html>";
 
         context.Response.ContentType = "text/html";
-
         await WriteResponse(context.Response, html);
     }
 
@@ -260,7 +300,11 @@ public class HttpListenerServer
     }
 
     private async Task ProcessRequest(HttpListenerContext context)
-    {
+    {   
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        int count = Interlocked.Increment(ref _totalRequests);
+
         try
         {
             var request = context.Request;
@@ -275,9 +319,10 @@ public class HttpListenerServer
                 return;
             }
 
-            Console.WriteLine($"{request.HttpMethod} {request.Url.LocalPath}");
+            
 
-            string routeKey = $"{request.HttpMethod} {request.Url.LocalPath}";
+            string localPath = request.Url?.LocalPath ?? "/";
+            string routeKey = $"{request.HttpMethod} {localPath}";
 
             if (_routes.TryGetValue(routeKey, out var handler))
             {
@@ -285,27 +330,37 @@ public class HttpListenerServer
             }
             else if (IsParameterizedRoute(request, out var paramHandler))
             {
-               await paramHandler(context);
+                await paramHandler!(context);
             }
             else
             {
                 await HandleNotFound(context);
             }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine($"Error processing request: {ex.Message}");
             try
             {
                 context.Response.StatusCode = 500;
-                await WriteJsonResponse(context.Response, new {error = "Internal server error"});
+                await WriteJsonResponse(context.Response, new { error = "Internal server error" });
             }
             catch
             {
-                // Server should just ignore if respoinse is already close
-                //could print somthing
                 Console.WriteLine("response is already closed");
             }
+        }
+        finally
+        {
+            
+            stopwatch.Stop();
+            
+            string method = context.Request.HttpMethod;
+            string path = context.Request.Url?.LocalPath ?? "/";
+            int status = context.Response.StatusCode;
+
+            Console.WriteLine($"Count: {count:D4} | [{DateTime.Now:yyyy-MM-dd HH:mm:ss}] | {method,-4} {path,-20}" +
+            $"-> Status: {status} [{stopwatch.Elapsed.TotalMilliseconds:F1}ms]");
         }
     }
     
