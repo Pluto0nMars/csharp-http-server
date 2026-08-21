@@ -12,6 +12,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 public class HttpListenerServer
 {
@@ -20,6 +21,8 @@ public class HttpListenerServer
     private readonly Dictionary<string, Func<HttpListenerContext, Task>> _routes;
 
     private static int _totalRequests = 0;
+
+    private readonly Stopwatch _uptime = Stopwatch.StartNew();
     
     public HttpListenerServer(string [] prefixes)
     {   
@@ -255,6 +258,9 @@ public class HttpListenerServer
     public async Task StartAsync()
     {
         _listener.Start();
+        
+        _ = StartMetricsLogger(_cancellationTokenSource.Token);
+
         Console.WriteLine("HTTP Server started on:");
         foreach (string prefix in _listener.Prefixes)
         {
@@ -393,5 +399,32 @@ public class HttpListenerServer
         _listener?.Stop();
         _listener?.Close();
    }
+
+   //Performance testing only
+    private async Task StartMetricsLogger(CancellationToken token)
+    {
+        // Write CSV Header
+        await File.WriteAllTextAsync("server_metrics.csv", "Seconds,TotalRequests,ReqsPerSec\n", token);
+
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+        int lastRequestCount = 0;
+
+        while (await timer.WaitForNextTickAsync(token))
+        {
+            int currentRequests = _totalRequests; // Shared Interlocked variable
+            int deltaRequests = currentRequests - lastRequestCount;
+            lastRequestCount = currentRequests;
+
+            double totalSeconds = Math.Round(_uptime.Elapsed.TotalSeconds, 1);
+            double reqsPerSec = Math.Round(deltaRequests / 5.0, 2);
+
+            // Append line to CSV file
+            string csvLine = $"{totalSeconds},{currentRequests},{reqsPerSec}\n";
+            await File.AppendAllTextAsync("server_metrics.csv", csvLine, token);
+
+            // Terminal Feedback
+            Console.WriteLine($"[METRICS] Time: {totalSeconds}s | Total Reqs: {currentRequests} | Speed: {reqsPerSec} req/sec");
+        }
+    }
 
 }
