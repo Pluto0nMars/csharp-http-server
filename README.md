@@ -38,7 +38,7 @@ In my program, I used C#'s built-in System.Diagnostics and PeriodicTimer librari
 ## Experience
 I chose to use simple technologies  in order to gain a better understanding of how a server would operate in C#. Additional libraries were limited to C#'s built in Threading and Threading.Tasks for concurrent handling of server requests and responses. I also added the Diagnostics to perform performance testing.  All other operations including creating the HTML home route, displaying various Output, and benchmarking were done using C#'s standard library. This approach allowed me to prioritize the main methods associated with an HTML server while also allowing me to easily expand the available methods in the future.
 
-I was familiar with Async/Await and Task before I started the project, but after completing server I have a better perspective when it comes to how it can be utilized in other application, particularly ones involving concurrent processes. The error handling associated with these keywords was also a great learning experience when it came to understanding the various exception that make occur while running the server. It was important to handle the errors gracefully so as to not crash the server due to one user's error.
+I was familiar with Async/Await and Task before I started the project, but after completing server I have a better perspective when it comes to how it can be utilized in other applications, particularly ones involving concurrent processes. The error handling associated with these keywords was also a great learning experience when it came to understanding the various exception that make occur while running the server. It was important to handle the errors gracefully so as to not crash the server due to one user's error.
 
 
 
